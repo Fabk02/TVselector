@@ -57,57 +57,57 @@ def tk_exec_focus(event, buttons):
 
 #######################################################################################
 
-pygame.init()   
-pygame.joystick.init()
 
-if pygame.joystick.get_count() > 0:
-    joystick = pygame.joystick.Joystick(0)
-    joystick.init()
-
-def initialize_axis():
+def initialize_axis(joystick):
     pygame.event.pump()
     ax_0 = joystick.get_axis(0)
     return ax_0
 
-def initialize_hat():
+def initialize_hat(joystick):
     pygame.event.pump()
     hat_0 = joystick.get_hat(0)
     return hat_0
 
-def initialize_buttons():
+def initialize_buttons(joystick):
     pygame.event.pump()
     left = joystick.get_button(4)
     right = joystick.get_button(5)
     return (left, right)
 
-def initialize_ok_button():
+def initialize_ok_button(joystick):
     pygame.event.pump()
     ok_button = joystick.get_button(0)
     return ok_button
 
-def update(min_value, max_value):
+def update(joystick, min_value, max_value):
     global cont
-    axis = initialize_axis()
-    hat = initialize_hat()
-    left_button, right_button = initialize_buttons() 
+    axis = initialize_axis(joystick)
+    hat = initialize_hat(joystick)
+    left_button, right_button = initialize_buttons(joystick) 
 
     if (axis > 0 or hat[0] > 0 or right_button) :
         increase_counter(max_value)
     elif (axis < 0 or hat[0] < 0 or left_button):
         decrease_counter(min_value)
 
-    root.after(125, lambda: update(min_value, max_value))
+    root.after(125, lambda: update(joystick, min_value, max_value))
 
-def exec_focus(buttons):
+def exec_focus(joystick, buttons):
     global cont
-    ok_button = initialize_ok_button()
+    ok_button = initialize_ok_button(joystick)
 
     if ok_button:
         buttons[cont].invoke()
 
-    root.after(125, lambda: exec_focus(buttons))
+    root.after(125, lambda: exec_focus(joystick, buttons))
 
 #######################################################################################
+pygame.init()   
+pygame.joystick.init()
+
+if pygame.joystick.get_count() > 0:
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
 
 root = tk.Tk()
 root.title("Selector")
@@ -158,9 +158,10 @@ root.bind("<Right>", lambda event: increase_focus(event, buttons, n_buttons))
 root.bind("<Left>", lambda event: decrease_focus(event, buttons, 0))
 root.bind("<Return>", lambda event: tk_exec_focus(event, buttons))
 
-update(0, n_buttons)
+update(joystick, 0, n_buttons)
 update_focus(buttons)
-exec_focus(buttons)
+exec_focus(joystick, buttons)
+
 root.mainloop()
 pygame.quit()
 

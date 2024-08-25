@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import os
+import configparser
 
 cont = 0
 joystick_counter = 0
@@ -65,20 +66,6 @@ def loop_if_joystick_connected(frame, buttons, min_value, max_value):
 
     frame.after(125, lambda: loop_if_joystick_connected(frame, buttons, min_value, max_value))
 
-#LAUNCH_FUNCTIONS
-
-def launch_steam():
-    os.system(' "C:\Program Files (x86)\Steam\Steam.exe" ')
-
-def launch_emulator():
-    print("Emulator")
-
-def launch_kodi():
-    os.system('start shell:AppsFolder\XBMCFoundation.Kodi_4n2hpmxwrvr6p!Kodi')
-
-def launch_desktop():
-    root.destroy()
-
 #TKINTER_FUNCTIONS
 
 def tk_increase_focus(event, buttons, max_value):
@@ -95,7 +82,24 @@ def tk_exec_focus(event, buttons):
     global cont
     buttons[cont].invoke()
 
+#UTILITY FUNCTIONS
+def resize_image(icon, ratio):
+    image = Image.open(icon)
+    resize_image = image.resize((ratio, ratio))
+    return (ImageTk.PhotoImage(resize_image))
+
+def lambda_maker(frame, cmd):
+    if cmd == "exit":
+        return lambda: frame.destroy()
+    else:
+        return lambda: os.system(cmd)
+
+
 #MAIN PROGRAM
+
+buttons_parser = configparser.ConfigParser()
+buttons_parser.read("./config/buttons.ini")
+section_list = buttons_parser.sections()
 
 pygame.init()   
 pygame.joystick.init()
@@ -111,34 +115,27 @@ frame =  ttk.Frame(root)
 frame.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 frame.pack(expand=True, padx=padding)
 
-n_buttons = 4
-buttons = [None] * n_buttons
-
-path = "./icons/"
-og_icons = [path+"steam.png", path+"retroarch.png", path+"kodi.png", path+"windows.png"]
-icons = []
+n_buttons = len(buttons_parser.sections())
 int_ratio = int(screen_width/n_buttons) - padding*(n_buttons)
-for icon in og_icons:
-    image = Image.open(icon)
-    resize_image = image.resize((int_ratio, int_ratio))
-    icons.append(ImageTk.PhotoImage(resize_image))
 
-#STEAM BUTTON
-buttons[0] = ttk.Button(frame, text="steam", image= icons[0],command=launch_steam)
-buttons[0].grid(row=0, column=0, sticky=(tk.E,tk.W))
+buttons = []
+icons = []
+scripts = []
+section_counter = 0
+for section in section_list:
 
-
-#EMULATOR BUTTON
-buttons[1] = ttk.Button(frame, text="emulator", image= icons[1], command=launch_emulator)
-buttons[1].grid(row=0, column=1, sticky=(tk.E,tk.W))
-
-#KODI BUTTON
-buttons[2] = ttk.Button(frame, text="kodi", image= icons[2], command=launch_kodi)
-buttons[2].grid(row=0, column=2, sticky=(tk.E,tk.W))
-
-#DESKTOP BUTTON 
-buttons[3] = ttk.Button(frame, text="desktop", image= icons[3], command=launch_desktop)
-buttons[3].grid(row=0, column=3, sticky=(tk.E,tk.W))
+    for key,value in buttons_parser.items(section):
+        if key == "icon":
+            icons.append(resize_image(value, int_ratio))
+        elif key == "script":
+            if os.name == 'nt':
+                cmd = value.replace("/","\\")
+            else:
+                cmd = value
+      
+    buttons.append(ttk.Button(frame, text=section, image= icons[section_counter], command= lambda_maker(root,cmd)))
+    buttons[section_counter].grid(row=0, column=section_counter, sticky=(tk.E,tk.W))
+    section_counter += 1
 
 for child in frame.winfo_children():
     child.grid(padx=padding)

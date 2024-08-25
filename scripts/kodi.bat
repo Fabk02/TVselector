@@ -1,0 +1,1 @@
+start shell:AppsFolder\XBMCFoundation.Kodi_4n2hpmxwrvr6p!Kodi

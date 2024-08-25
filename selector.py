@@ -4,21 +4,11 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import os
 
-def launch_steam():
-    os.system(' "C:\Program Files (x86)\Steam\Steam.exe" ')
-    root.destroy()
-
-def launch_emulator():
-    print("Emulator")
-
-def launch_kodi():
-    os.system('start shell:AppsFolder\XBMCFoundation.Kodi_4n2hpmxwrvr6p!Kodi')
-    root.destroy()
-
-def launch_desktop():
-    root.destroy()
-
 cont = 0
+joystick_counter = 0
+joystick = 0
+
+#COUNTER FUNCTIONS
 
 def increase_counter(max_value):
     global cont
@@ -30,84 +20,85 @@ def decrease_counter(min_value):
     if cont > min_value:
         cont -= 1
 
-def increase_focus(event, buttons, max_value):
+#PYGAME FUNCTIONS
+
+def check_joystick(frame):
+    global joystick
+    global joystick_counter
+
+    pygame.joystick.quit()
+    pygame.joystick.init()
+
+    joystick_counter = pygame.joystick.get_count()
+    if joystick_counter > 0:
+        joystick = pygame.joystick.Joystick(0)
+        joystick.init()
+
+    frame.after(50, lambda: check_joystick(frame))
+
+def joystick_loop(buttons, min_value, max_value):
+    global cont
+    global joystick
+    pygame.event.pump()
+
+    buttons[cont].focus()
+
+    left_axis = joystick.get_axis(0)
+    hat = joystick.get_hat(0)
+    left_button = joystick.get_button(4)
+    right_button = joystick.get_button(5)
+    ok_button = joystick.get_button(0)
+
+
+    if (left_axis > 0 or hat[0] > 0 or right_button) :
+        increase_counter(max_value)
+    elif (left_axis < 0 or hat[0] < 0 or left_button):
+        decrease_counter(min_value)
+
+    if ok_button:
+        buttons[cont].invoke()
+
+def loop_if_joystick_connected(frame, buttons, min_value, max_value):
+    global joystick_counter
+    if (joystick_counter > 0) and (frame.focus_displayof() != None):
+        joystick_loop(buttons, min_value, max_value)
+
+    frame.after(125, lambda: loop_if_joystick_connected(frame, buttons, min_value, max_value))
+
+#LAUNCH_FUNCTIONS
+
+def launch_steam():
+    os.system(' "C:\Program Files (x86)\Steam\Steam.exe" ')
+
+def launch_emulator():
+    print("Emulator")
+
+def launch_kodi():
+    os.system('start shell:AppsFolder\XBMCFoundation.Kodi_4n2hpmxwrvr6p!Kodi')
+
+def launch_desktop():
+    root.destroy()
+
+#TKINTER_FUNCTIONS
+
+def tk_increase_focus(event, buttons, max_value):
     global cont
     increase_counter(max_value)
     buttons[cont].focus()
 
-def decrease_focus(event, buttons, min_value):
+def tk_decrease_focus(event, buttons, min_value):
     global cont
     decrease_counter(min_value)
     buttons[cont].focus()
-
-def printcont():
-    global cont
-    print(cont)
-    root.after(50, lambda: printcont())
-
-def update_focus(buttons):
-    global cont
-    buttons[cont].focus()
-    root.after(50, lambda:update_focus(buttons))
 
 def tk_exec_focus(event, buttons):
     global cont
     buttons[cont].invoke()
 
+#MAIN PROGRAM
 
-#######################################################################################
-
-
-def initialize_axis(joystick):
-    pygame.event.pump()
-    ax_0 = joystick.get_axis(0)
-    return ax_0
-
-def initialize_hat(joystick):
-    pygame.event.pump()
-    hat_0 = joystick.get_hat(0)
-    return hat_0
-
-def initialize_buttons(joystick):
-    pygame.event.pump()
-    left = joystick.get_button(4)
-    right = joystick.get_button(5)
-    return (left, right)
-
-def initialize_ok_button(joystick):
-    pygame.event.pump()
-    ok_button = joystick.get_button(0)
-    return ok_button
-
-def update(joystick, min_value, max_value):
-    global cont
-    axis = initialize_axis(joystick)
-    hat = initialize_hat(joystick)
-    left_button, right_button = initialize_buttons(joystick) 
-
-    if (axis > 0 or hat[0] > 0 or right_button) :
-        increase_counter(max_value)
-    elif (axis < 0 or hat[0] < 0 or left_button):
-        decrease_counter(min_value)
-
-    root.after(125, lambda: update(joystick, min_value, max_value))
-
-def exec_focus(joystick, buttons):
-    global cont
-    ok_button = initialize_ok_button(joystick)
-
-    if ok_button:
-        buttons[cont].invoke()
-
-    root.after(125, lambda: exec_focus(joystick, buttons))
-
-#######################################################################################
 pygame.init()   
 pygame.joystick.init()
-
-if pygame.joystick.get_count() > 0:
-    joystick = pygame.joystick.Joystick(0)
-    joystick.init()
 
 root = tk.Tk()
 root.title("Selector")
@@ -152,16 +143,12 @@ buttons[3].grid(row=0, column=3, sticky=(tk.E,tk.W))
 for child in frame.winfo_children():
     child.grid(padx=padding)
 
-###################################################################
-buttons[cont].focus()
-root.bind("<Right>", lambda event: increase_focus(event, buttons, n_buttons))
-root.bind("<Left>", lambda event: decrease_focus(event, buttons, 0))
-root.bind("<Return>", lambda event: tk_exec_focus(event, buttons))
+check_joystick(root)
+loop_if_joystick_connected(root, buttons, 0, n_buttons)
 
-update(joystick, 0, n_buttons)
-update_focus(buttons)
-exec_focus(joystick, buttons)
+root.bind("<Right>", lambda event: tk_increase_focus(event, buttons, n_buttons))
+root.bind("<Left>", lambda event: tk_decrease_focus(event, buttons, 0))
+root.bind("<Return>", lambda event: tk_exec_focus(event, buttons))
 
 root.mainloop()
 pygame.quit()
-

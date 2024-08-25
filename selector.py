@@ -123,8 +123,8 @@ frame.pack(expand=True, padx=padding)
 n_buttons = 4
 buttons = [None] * n_buttons
 
-
-og_icons = ["Icons/steam.png", "Icons/retroarch.png", "Icons/kodi.png", "Icons/windows.png"]
+path = "./icons/"
+og_icons = [path+"steam.png", path+"retroarch.png", path+"kodi.png", path+"windows.png"]
 icons = []
 int_ratio = int(screen_width/n_buttons) - padding*(n_buttons)
 for icon in og_icons:
